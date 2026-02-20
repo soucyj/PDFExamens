@@ -199,7 +199,8 @@
             <p>• Colonne 2 : Numéro d'identification (NI)</p>
             <p>• Colonne 3 : Numéro de table</p>
             <p>• Colonne 4 : Local</p>
-            <p>• Colonne 5 : Section</p>
+            <p>• Colonne 5 : NRC</p>
+            <p>• Colonne 6 : Enseignant</p>
         </div>
 
         <div class="upload-section">
@@ -217,7 +218,7 @@
             <select id="listOption" onchange="toggleListFields()">
                 <option value="none">Aucune liste</option>
                 <option value="local">Liste des étudiants par locaux</option>
-                <option value="section">Liste des étudiants par section</option>
+                <option value="nrc">Liste des étudiants par NRC</option>
             </select>
         </div>
 
@@ -254,12 +255,27 @@
             nomX: 445,
             nomY: 88,  // Distance depuis le haut de la page
             nomSize: 12,
-            
-            // Position du NI (sous le nom)
-            niX: 450,
+
+            // Position du NI (matricule)
+            niX: 370,
             niY: 147,  // Distance depuis le haut de la page
             niSize: 16,
-            
+
+            // Position de la Section (à droite du matricule)
+            sectionX: 505,
+            sectionY: 147,  // Même hauteur que le NI
+            sectionSize: 12,
+
+            // Position du NRC
+            nrcX: 460,
+            nrcY: 142,  // Sous l'examen
+            nrcSize: 12,
+
+            // Position de l'enseignant
+            enseignantX: 460,
+            enseignantY: 155,  // Sous le NRC
+            enseignantSize: 12,
+
             // Position du numéro de table (coin bas droit)
             tableX: 88,  // Distance depuis le bord droit
             tableY: 38,  // Distance depuis le bas
@@ -370,6 +386,18 @@
                         font,
                         color: rgb(0, 0, 0),
                         });
+
+                        // --- SECTION : NRC (Enseignant) ---
+                        const sectionText = `${student.nrc} (${student.enseignant})`;
+                        const sectionWidth = font.widthOfTextAtSize(sectionText, CONFIG.sectionSize);
+
+                        firstPage.drawText(sectionText, {
+                        x: CONFIG.sectionX - sectionWidth / 2,
+                        y: height - CONFIG.sectionY,
+                        size: CONFIG.sectionSize,
+                        font,
+                        color: rgb(0, 0, 0),
+                        });
                     // Numéro de table au bas de chaque page (coin inférieur droit, DANS le rectangle)
                     for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
                         const page = pages[pageIndex];
@@ -401,8 +429,9 @@
                     console.log(`PDF sauvegardé, taille: ${modifiedPdfBytes.length} bytes`);
                     
                     // Ajouter au ZIP avec un nom de fichier nettoyé
+                    const tableNum = String(parseInt(student.table, 10)).padStart(3, '0');
                     const fileName = sanitizeFileName(student.name);
-                    const fullFileName = `${fileName}_${student.ni}.pdf`;
+                    const fullFileName = `${tableNum}-${fileName}_${student.ni}.pdf`;
                     zip.file(fullFileName, modifiedPdfBytes);
                     console.log(`Ajouté au ZIP: ${fullFileName}`);
                 }
@@ -412,7 +441,7 @@
                     progressFill.style.width = '92%';
                     progressText.textContent = 'Génération des listes de présence...';
 
-                    const groupBy = listOption; // 'local' ou 'section'
+                    const groupBy = listOption; // 'local' ou 'nrc'
                     const groups = {};
                     for (const student of students) {
                         const key = student[groupBy];
@@ -425,7 +454,7 @@
                         const attendancePdfBytes = await generateAttendancePDF(
                             groups[groupValue], groupBy, groupValue, evalName, courseName
                         );
-                        const label = groupBy === 'local' ? 'Local' : 'Section';
+                        const label = groupBy === 'local' ? 'Local' : 'NRC';
                         const fileName = `listes_presence/Presence_${label}_${sanitizeFileName(groupValue)}.pdf`;
                         zip.file(fileName, attendancePdfBytes);
                     }
@@ -477,14 +506,15 @@
                     // Détecter le séparateur (virgule ou point-virgule)
                     const separator = line.includes(';') ? ';' : ',';
                     const parts = line.split(separator);
-                    
-                    if (parts.length >= 5) {
+
+                    if (parts.length >= 6) {
                         students.push({
                             name: parts[0].trim(),
                             ni: parts[1].trim(),
                             table: parts[2].trim(),
                             local: parts[3].trim(),
-                            section: parts[4].trim()
+                            nrc: parts[4].trim(),
+                            enseignant: parts[5].trim()
                         });
                     }
                 }
@@ -526,21 +556,21 @@
             const rowSize = 10;
             const rowHeight = 22;
             const headerHeight = 25;
-            const colWidths = [190, 75, 55, 75, 65]; // Nom, Matricule, Table, Section/Local, Présence
+            const colWidths = [190, 75, 55, 75, 65]; // Nom, Matricule, Table, NRC/Local, Présence
             const tableTop = pageHeight - margin - 45;
 
             // En-têtes selon le mode
             let headers, fourthColLabel;
             if (groupBy === 'local') {
-                headers = ['Nom', 'Matricule', 'Table', 'Section', 'Présence'];
-                fourthColLabel = 'section';
+                headers = ['Nom', 'Matricule', 'Table', 'NRC', 'Présence'];
+                fourthColLabel = 'nrc';
             } else {
                 headers = ['Nom', 'Matricule', 'Table', 'Local', 'Présence'];
                 fourthColLabel = 'local';
             }
 
             // Titre
-            const titleLabel = groupBy === 'local' ? 'Local' : 'Section';
+            const titleLabel = groupBy === 'local' ? 'Local' : 'NRC';
             const title = `Feuille de présence - ${evalName} - ${courseName} - ${titleLabel} ${groupValue}`;
 
             // Nombre d'étudiants par page
