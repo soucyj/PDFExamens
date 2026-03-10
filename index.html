@@ -276,9 +276,9 @@
             enseignantY: 155,  // Sous le NRC
             enseignantSize: 12,
 
-            // Position du numéro de table (coin bas droit)
+            // Position du numéro de table (coin haut droit)
             tableX: 88,  // Distance depuis le bord droit
-            tableY: 38,  // Distance depuis le bas
+            tableY: 38,  // Distance depuis le haut de la page
             tableSize: 16
         };
         // ==================================================
@@ -398,30 +398,23 @@
                         font,
                         color: rgb(0, 0, 0),
                         });
-                    // Numéro de table au bas de chaque page (coin inférieur droit, DANS le rectangle)
-                    for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
-                        const page = pages[pageIndex];
-                        const { width: pageWidth } = page.getSize();
-                        
+                    // Numéro de table en haut de chaque page (coin supérieur droit)
                     for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
                     const page = pages[pageIndex];
-                    const { width: pageWidth } = page.getSize();
+                    const { width: pageWidth, height: pageHeight } = page.getSize();
 
                     const tableText = student.table;
                     const tableWidth = font.widthOfTextAtSize(tableText, CONFIG.tableSize);
 
-                    // Ton config actuel place le champ à "pageWidth - tableX"
-                    // On interprète donc (pageWidth - tableX) comme le CENTRE du champ
                     const tableCenterX = pageWidth - CONFIG.tableX;
 
                     page.drawText(tableText, {
                         x: tableCenterX - tableWidth / 2,
-                        y: CONFIG.tableY,
+                        y: pageHeight - CONFIG.tableY,
                         size: CONFIG.tableSize,
                         font,
                         color: rgb(0, 0, 0),
                     });
-                    }
                     }
 
                     // Sauvegarder le PDF
